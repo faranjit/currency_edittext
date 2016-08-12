@@ -56,7 +56,7 @@ public class CurrencyEditText extends EditText {
             else this.mLocale = a.getString(R.styleable.currencyEditText_locale);
 
             if (a.getString(R.styleable.currencyEditText_showSymbol) != null)
-                this.mShowSymbol = a.getBoolean(R.styleable.currencyEditText_showSymbol, false);
+                this.mShowSymbol = a.getBoolean(R.styleable.currencyEditText_showSymbol, true);
 
             if (mLocale.equals("")) {
                 locale = getDefaultLocale();
