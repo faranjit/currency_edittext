@@ -56,7 +56,7 @@ public class CurrencyEditText extends EditText {
             else this.mLocale = a.getString(R.styleable.currencyEditText_locale);
 
             if (a.getString(R.styleable.currencyEditText_showSymbol) != null)
-                this.mShowSymbol = a.getBoolean(R.styleable.currencyEditText_showSymbol, true);
+                this.mShowSymbol = a.getBoolean(R.styleable.currencyEditText_showSymbol, false);
 
             if (mLocale.equals("")) {
                 locale = getDefaultLocale();
@@ -80,6 +80,11 @@ public class CurrencyEditText extends EditText {
         this.addTextChangedListener(onTextChangeListener);
     }
 
+    /***
+     * If user does not provide a valid locale it throws IllegalArgumentException.
+     * 
+     * If throws an IllegalArgumentException the locale sets to default locale
+     */
     private void initSettings() {
         boolean success = false;
         while (!success) {
@@ -115,6 +120,9 @@ public class CurrencyEditText extends EditText {
             return getContext().getResources().getConfiguration().locale;
     }
 
+    /***
+     *It resets text currently displayed If user changes separators or locale etc.
+     */
     private void resetText() {
         String s = getText().toString();
         s = s.replace(groupDivider, '\u0020').replace(monetaryDivider, '\u0020')
@@ -146,6 +154,10 @@ public class CurrencyEditText extends EditText {
 
             removeTextChangedListener(this);
 
+            /***
+             * Clear input to get clean text before format
+             * '\u0020' is empty character
+             */
             String text = s.toString();
             text = text.replace(groupDivider, '\u0020').replace(monetaryDivider, '\u0020')
                     .replace(".", "").replace(" ", "")
@@ -175,39 +187,110 @@ public class CurrencyEditText extends EditText {
             return numberFormat.format(Double.parseDouble(text) / Math.pow(10, fractionDigit)).replace(currencySymbol, "");
     }
 
+    /***
+     * returns the decimal separator for current locale
+     * for example; input value 1,234.56
+     *              returns ','
+     *
+     * @return decimal separator char
+     */
     public char getGroupDivider() {
         return groupDivider;
     }
 
+    /***
+     * sets how to divide decimal value and fractions
+     * for example; If you want formatting like this
+     *              for input value 1,234.56
+     *              set ','
+     * @param groupDivider char
+     */
     public void setGroupDivider(char groupDivider) {
         this.mGroupDivider = groupDivider;
         resetText();
     }
 
+    /***
+     * returns the monetary separator for current locale
+     * for example; input value 1,234.56
+     *              returns '.'
+     *
+     * @return monetary separator char
+     */
     public char getMonetaryDivider() {
         return monetaryDivider;
     }
 
+    /***
+     * sets how to divide decimal value and fractions
+     * for example; If you want formatting like this
+     *              for input value 1,234.56
+     *              set '.'
+     * @param monetaryDivider char
+     */
     public void setMonetaryDivider(char monetaryDivider) {
         this.mMonetaryDivider = monetaryDivider;
         resetText();
     }
 
+    /***
+     *
+     * @return current locale
+     */
     public Locale getLocale() {
         return locale;
     }
 
+    /***
+     * Sets locale which desired currency format
+     *
+     * @param locale
+     */
     public void setLocale(Locale locale) {
         this.locale = locale;
         resetText();
     }
 
+    /**
+     *
+     * @return true if currency symbol of current locale is showing
+     */
     public boolean showSymbol() {
         return this.mShowSymbol;
     }
 
+    /***
+     * Sets if currency symbol of current locale shows
+     *
+     * @param showSymbol
+     */
     public void showSymbol(boolean showSymbol) {
         this.mShowSymbol = showSymbol;
         resetText();
+    }
+
+    /**
+     *
+     *  @return double value for current text
+     */
+    public double getCurrencyDouble() throws ParseException {
+        String text = getText().toString();
+        text = text.replace(groupDivider, '\u0020').replace(monetaryDivider, '\u0020')
+                .replace(".", "").replace(" ", "")
+                .replace(currencySymbol, "").trim();
+
+        if (showSymbol())
+            return Double.parseDouble(text.replace(currencySymbol, "")) / Math.pow(10, fractionDigit);
+        else return Double.parseDouble(text) / Math.pow(10, fractionDigit);
+    }
+
+    /**
+     *
+     *  @return String value for current text
+     */
+    public String getCurrencyText() throws ParseException {
+        if (showSymbol())
+            return getText().toString().replace(currencySymbol, "");
+        else return getText().toString();
     }
 }
