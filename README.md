@@ -35,7 +35,7 @@ final CurrencyEditText currencyEditText = (CurrencyEditText) findViewById(R.id.e
 currencyEditText.setLocale(new Locale("en", "US"));
 ```
 
-`CurrencyEditText` shows currency symbol depends on locale but you can set to not show.
+`CurrencyEditText` shows currency symbol depending on locale or you can set it not to show.
 ```xml
 <faranjit.currency.edittext.CurrencyEditText
         android:id="@+id/edt_currency"
