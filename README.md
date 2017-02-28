@@ -1,7 +1,7 @@
 ## How to Include currency_edittext?
 
 ```gradle
-compile 'com.github.faranjit:currency-edittext:1.0.0'
+compile 'com.github.faranjit:currency-edittext:1.0.1'
 ```
 
 #Usage
