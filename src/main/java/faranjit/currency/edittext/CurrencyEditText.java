@@ -125,6 +125,11 @@ public class CurrencyEditText extends EditText {
      */
     private void resetText() {
         String s = getText().toString();
+        if (s.isEmpty()) {
+            initSettings();
+            return;
+        }
+
         s = s.replace(groupDivider, '\u0020').replace(monetaryDivider, '\u0020')
                 .replace(".", "").replace(" ", "")
                 .replace(currencySymbol, "").trim();
