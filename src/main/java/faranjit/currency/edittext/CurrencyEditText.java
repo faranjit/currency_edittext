@@ -12,7 +12,6 @@ import android.widget.EditText;
 
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
-import java.text.ParseException;
 import java.util.Currency;
 import java.util.Locale;
 
@@ -24,6 +23,8 @@ public class CurrencyEditText extends EditText {
     private char mMonetaryDivider;
     private String mLocale = "";
     private boolean mShowSymbol;
+    private boolean mEraseWhenZero;
+    private int mDecimalPoints;
 
     private char groupDivider;
     private char monetaryDivider;
@@ -31,8 +32,8 @@ public class CurrencyEditText extends EditText {
     private Locale locale;
     private DecimalFormat numberFormat;
 
-    private int fractionDigit;
     private String currencySymbol;
+    private int fractionDigit;
 
     public CurrencyEditText(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -58,6 +59,14 @@ public class CurrencyEditText extends EditText {
             if (a.getString(R.styleable.currencyEditText_showSymbol) != null)
                 this.mShowSymbol = a.getBoolean(R.styleable.currencyEditText_showSymbol, false);
 
+            if (a.getString(R.styleable.currencyEditText_eraseWhenZero) != null)
+                this.mEraseWhenZero = a.getBoolean(R.styleable.currencyEditText_eraseWhenZero, false);
+
+            if (a.getString(R.styleable.currencyEditText_decimalPoints) != null) {
+                this.mDecimalPoints = a.getInt(R.styleable.currencyEditText_decimalPoints, 0);
+                this.fractionDigit = mDecimalPoints;
+            }
+
             if (mLocale.equals("")) {
                 locale = getDefaultLocale();
             } else {
@@ -82,14 +91,16 @@ public class CurrencyEditText extends EditText {
 
     /***
      * If user does not provide a valid locale it throws IllegalArgumentException.
-     * 
+     *
      * If throws an IllegalArgumentException the locale sets to default locale
      */
     private void initSettings() {
         boolean success = false;
         while (!success) {
             try {
-                fractionDigit = Currency.getInstance(locale).getDefaultFractionDigits();
+                if (fractionDigit == 0) {
+                    fractionDigit = Currency.getInstance(locale).getDefaultFractionDigits();
+                }
 
                 DecimalFormatSymbols symbols = DecimalFormatSymbols.getInstance(locale);
                 if (mGroupDivider > 0)
@@ -105,6 +116,10 @@ public class CurrencyEditText extends EditText {
                 DecimalFormat df = (DecimalFormat) DecimalFormat.getCurrencyInstance(locale);
                 numberFormat = new DecimalFormat(df.toPattern(), symbols);
 
+                if (mDecimalPoints > 0) {
+                    numberFormat.setMinimumFractionDigits(mDecimalPoints);
+                }
+
                 success = true;
             } catch (IllegalArgumentException e) {
                 Log.e(getClass().getCanonicalName(), e.getMessage());
@@ -113,6 +128,7 @@ public class CurrencyEditText extends EditText {
         }
     }
 
+    @SuppressWarnings("deprecation")
     private Locale getDefaultLocale() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N)
             return getContext().getResources().getConfiguration().getLocales().get(0);
@@ -140,7 +156,9 @@ public class CurrencyEditText extends EditText {
             setText(s);
             setSelection(s.length());
             addTextChangedListener(onTextChangeListener);
-        } catch (ParseException e) {
+        } catch (NumberFormatException e) {
+            Log.e(getClass().getCanonicalName(), e.getMessage());
+        } catch (NullPointerException e) {
             Log.e(getClass().getCanonicalName(), e.getMessage());
         }
     }
@@ -159,22 +177,28 @@ public class CurrencyEditText extends EditText {
 
             removeTextChangedListener(this);
 
-            /***
+            /*
              * Clear input to get clean text before format
              * '\u0020' is empty character
              */
             String text = s.toString();
-            text = text.replace(groupDivider, '\u0020').replace(monetaryDivider, '\u0020')
-                    .replace(".", "").replace(" ", "")
-                    .replace(currencySymbol, "").trim();
-            try {
-                text = format(text);
-            } catch (ParseException e) {
-                Log.e(getClass().getCanonicalName(), e.getMessage());
-            }
+            // thanks for: https://stackoverflow.com/a/10372905/1595442
+            text = text.replaceAll("[^\\d]", "");
 
-            setText(text);
-            setSelection(text.length());
+            if (checkErasable(text)) {
+                getText().clear();
+            } else {
+                try {
+                    text = format(text);
+                } catch (NumberFormatException e) {
+                    Log.e(getClass().getCanonicalName(), e.getMessage());
+                } catch (NullPointerException e) {
+                    Log.e(getClass().getCanonicalName(), e.getMessage());
+                }
+
+                setText(text);
+                setSelection(text.length());
+            }
 
             addTextChangedListener(this);
         }
@@ -185,11 +209,23 @@ public class CurrencyEditText extends EditText {
         }
     };
 
-    private String format(String text) throws ParseException {
+    private String format(String text) throws NumberFormatException, NullPointerException {
         if (mShowSymbol)
             return numberFormat.format(Double.parseDouble(text) / Math.pow(10, fractionDigit));
         else
             return numberFormat.format(Double.parseDouble(text) / Math.pow(10, fractionDigit)).replace(currencySymbol, "");
+    }
+
+    private boolean checkErasable(String text) {
+        if (mEraseWhenZero) {
+            try {
+                return Integer.valueOf(text) == 0;
+            } catch (NumberFormatException e) {
+                Log.e(getClass().getCanonicalName(), e.getMessage());
+            }
+        }
+
+        return false;
     }
 
     /***
@@ -249,7 +285,7 @@ public class CurrencyEditText extends EditText {
     /***
      * Sets locale which desired currency format
      *
-     * @param locale
+     * @param locale Desired locale
      */
     public void setLocale(Locale locale) {
         this.locale = locale;
@@ -257,7 +293,6 @@ public class CurrencyEditText extends EditText {
     }
 
     /**
-     *
      * @return true if currency symbol of current locale is showing
      */
     public boolean showSymbol() {
@@ -267,7 +302,7 @@ public class CurrencyEditText extends EditText {
     /***
      * Sets if currency symbol of current locale shows
      *
-     * @param showSymbol
+     * @param showSymbol Set true if you want to see currency symbol
      */
     public void showSymbol(boolean showSymbol) {
         this.mShowSymbol = showSymbol;
@@ -275,10 +310,9 @@ public class CurrencyEditText extends EditText {
     }
 
     /**
-     *
-     *  @return double value for current text
+     * @return double value for current text
      */
-    public double getCurrencyDouble() throws ParseException {
+    public double getCurrencyDouble() throws NumberFormatException, NullPointerException {
         String text = getText().toString();
         text = text.replace(groupDivider, '\u0020').replace(monetaryDivider, '\u0020')
                 .replace(".", "").replace(" ", "")
@@ -290,12 +324,31 @@ public class CurrencyEditText extends EditText {
     }
 
     /**
-     *
-     *  @return String value for current text
+     * @return String value for current text
      */
-    public String getCurrencyText() throws ParseException {
+    public String getCurrencyText() {
         if (showSymbol())
             return getText().toString().replace(currencySymbol, "");
         else return getText().toString();
+    }
+
+    /**
+     * @return Int value of count of monetary decimals.
+     */
+    public int getFractionDigit() {
+        return fractionDigit;
+    }
+
+    /**
+     * Changes count of monetary decimal.
+     * For instance;
+     * if you set 4, it formats like 12,3456 for 123456
+     *
+     * @param decimalPoints The count of monetary decimals
+     */
+    public void setDecimals(int decimalPoints) {
+        this.mDecimalPoints = decimalPoints;
+        this.fractionDigit = decimalPoints;
+        resetText();
     }
 }

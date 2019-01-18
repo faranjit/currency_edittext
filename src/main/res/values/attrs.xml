@@ -5,5 +5,7 @@
         <attr name="monetaryDivider" format="string" />
         <attr name="locale" format="string" />
         <attr name="showSymbol" format="boolean" />
+        <attr name="eraseWhenZero" format="boolean" />
+        <attr name="decimalPoints" format="integer" />
     </declare-styleable>
 </resources>
