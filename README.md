@@ -1,9 +1,3 @@
-## How to Include currency_edittext?
-
-```gradle
-compile 'com.github.faranjit:currency-edittext:1.0.1'
-```
-
 #Usage
 
 These lines formats simply your input for default locale.
