@@ -1,4 +1,4 @@
-#Usage
+**Usage**
 
 These lines formats simply your input for default locale.
 
